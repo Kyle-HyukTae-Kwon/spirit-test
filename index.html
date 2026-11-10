@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>캠퍼스 정령 테스트</title>
+<style>
+  :root {
+    --bg: #f6f3ee;
+    --card: #ffffff;
+    --text: #2b2a28;
+    --muted: #6f6a63;
+    --accent: #5b8c6a;
+    --accent-soft: #e4efe6;
+    --line: #e5e0d8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    line-height: 1.6;
+    /* 한글을 글자 단위가 아닌 단어(띄어쓰기) 단위로 줄바꿈 */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    text-wrap: pretty;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  main { width: 100%; max-width: 480px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 32px 24px;
+  }
+  h1 { font-size: 2rem; margin: 0 0 12px; line-height: 1.3; }
+  h2 { font-size: 1.3rem; margin: 0 0 20px; line-height: 1.4; }
+  h3 { font-size: 1rem; margin: 20px 0 6px; color: var(--accent); }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .center { text-align: center; }
+  /* 가운데 정렬 글은 줄 길이를 고르게 */
+  .center h1, .center h2, .center p, h2 { text-wrap: balance; }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 14px;
+  }
+  .primary {
+    display: block;
+    width: 100%;
+    margin-top: 28px;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .primary:hover { filter: brightness(1.05); }
+  .start-emoji { font-size: 3.5rem; margin-bottom: 12px; }
+
+  /* 질문 화면 */
+  .progress-bar {
+    height: 8px;
+    background: var(--line);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    transition: width .3s;
+  }
+  .progress-text { margin: 8px 0 20px; font-size: .9rem; color: var(--muted); }
+  .answers { display: grid; gap: 10px; }
+  .answer {
+    text-align: left;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 1rem;
+    white-space: pre-line; /* 답 문장 속 \n 자리에서 줄바꿈 */
+  }
+  .answer:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+  /* 결과 화면 */
+  figure { margin: 0 0 20px; }
+  .picture {
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    border-radius: 16px;
+    background: var(--accent-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: 4.5rem;
+  }
+  .picture img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  figcaption { margin-top: 6px; font-size: .75rem; color: var(--muted); }
+  .result-label { font-size: .9rem; color: var(--muted); }
+  .result-name { font-size: 1.8rem; margin: 4px 0 8px; }
+  ul { margin: 0; padding-left: 20px; }
+  #careful { white-space: pre-line; }
+  .note { margin-top: 24px; font-size: .85rem; text-align: center; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- 첫 화면 -->
+  <section id="start" class="screen active">
+    <div class="card center">
+      <div class="start-emoji">🌱</div>
+      <h1>캠퍼스 정령 테스트</h1>
+      <p class="muted">수강신청부터 종강까지, 내 속마음으로 알아보는 나와 닮은 캠퍼스 정령</p>
+      <button class="primary" id="start-btn">시작</button>
+    </div>
+  </section>
+
+  <!-- 질문 화면 -->
+  <section id="quiz" class="screen">
+    <div class="card">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <p class="progress-text" id="progress-text">질문 1 / 6</p>
+      <h2 id="question"></h2>
+      <div class="answers" id="answers"></div>
+    </div>
+  </section>
+
+  <!-- 결과 화면 -->
+  <section id="result" class="screen">
+    <div class="card">
+      <div class="center">
+        <figure>
+          <div class="picture" id="picture"></div>
+          <figcaption id="ai-caption">AI로 만든 이미지</figcaption>
+        </figure>
+        <p class="result-label">나와 닮은 캠퍼스 정령은</p>
+        <h1 class="result-name" id="name"></h1>
+        <p id="oneline"></p>
+      </div>
+      <h3>사는 곳</h3>
+      <p id="home"></p>
+      <h3>잘하는 것</h3>
+      <ul id="good"></ul>
+      <h3>조심할 것</h3>
+      <p id="careful"></p>
+      <h3>잘 맞는 정령</h3>
+      <p id="match"></p>
+      <button class="primary" id="retry-btn">다시 하기</button>
+      <p class="note">재미로 보는 테스트예요.<br>우리는 모두 여러&nbsp;정령의 모습을 조금씩 갖고 있어요 🌱</p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ===== 정령 4종 (plan.md 1장) =====
+// key는 그림 파일 이름에 쓰임: images_spirit-<key>.png
+const SPIRITS = {
+  planner: {
+    emoji: "📋",
+    name: "갓생이",
+    alt: "둥근 안경에 줄무늬 목도리를 두르고 배에 시계가 달린 하얀 털뭉치 정령이 도서관 서가 앞 사다리에 올라서서 책을 읽고 있는 그림",
+    oneline: "배에 품은 시계로 하루를 차곡차곡 나누고, 사다리를 올라서라도 서가 꼭대기 책까지 찾아 읽는 정령",
+    home: ["중앙도서관", "햇살 드는 창가 옆 나무 사다리가 놓인 높은 서가 사이"],
+    good: [
+      "큰 일을 작게 나눠서 하나씩 끝내기",
+      "복잡한 내용을 한눈에 보기 좋게 정리하기",
+      "마감이 다가와도 침착하게 페이스 지키기"
+    ],
+    careful: "계획이 틀어지면 마음이 무거워질 때가 있어요. 오늘 못 한 일은 내일의 나에게 살짝 맡겨도 괜찮아요.",
+    match: "passion",
+    matchWhy: "갓생이가 지도를 그리고 열정이가 먼저 달려 나가면, 시작도 빠르고 마무리도 깔끔해요."
+  },
+  friend: {
+    emoji: "🤝",
+    name: "친친이",
+    alt: "과잠과 목도리 차림의 고양이가 과방 소파에 앉아 활짝 웃고, 곰과 여우와 친구가 둘러서서 함께 웃고 있는 그림",
+    oneline: "\"밥 먹었어?\" 한마디로 사람을 잇는, 따뜻한 연결의 정령",
+    home: ["과방", "소파 옆, 학생회가 채워 두는 간식 바구니 근처"],
+    good: [
+      "처음 보는 사람과도 금방 편해지기",
+      "친구의 기분 변화를 먼저 알아채기",
+      "어색한 자리를 부드럽게 풀기"
+    ],
+    careful: "모두를 챙기다 보면 내 몫의 에너지를 잊을 때가 있어요. 가끔은 혼자만의 시간도 나에게 주는 선물이에요.",
+    match: "feeling",
+    matchWhy: "친친이가 넓게 이어 주고 감성이가 깊게 들어 줘서, 함께 있으면 마음이 편안해져요."
+  },
+  passion: {
+    emoji: "🔥",
+    name: "열정이",
+    alt: "머리띠를 두르고 빨간 러닝 셔츠를 입은 치타가 땀을 흘리며 운동장 트랙을 흙먼지를 일으키며 힘차게 달리는 그림",
+    oneline: "\"일단 해 보자!\"가 입버릇인, 망설임보다 한 걸음이 빠른 정령",
+    home: ["대운동장", "트랙 위, 열정이의 땀과 노력이 담겨 있는 곳"],
+    good: [
+      "생각나면 바로 행동으로 옮기기",
+      "막힌 상황에서 새로운 길 찾아내기",
+      "주변 사람들까지 의욕 넘치게 만들기"
+    ],
+    careful: "하고 싶은 게 많아 쉬는 시간을 깜빡할 때가 있어요. 전력 질주 사이사이에 물 한 모금, 잠 한숨 꼭 챙기세요.",
+    match: "planner",
+    matchWhy: "열정이의 추진력에 갓생이의 정리력이 붙으면, 아이디어가 진짜 결과물이 돼요."
+  },
+  feeling: {
+    emoji: "🎨",
+    name: "감성이",
+    alt: "머리에 새싹이 난 나무늘보가 본관 앞 분수대 옆 잔디밭에 기대 누워 눈을 감고 음표가 흐르는 음악을 즐기는 그림",
+    oneline: "물소리와 계절 냄새를 먼저 알아채는, 섬세한 감성의 정령",
+    home: ["본관 앞마당", "분수대를 빙 둘러싼 산책로"],
+    good: [
+      "남들이 지나치는 작은 아름다움 발견하기",
+      "글·사진·그림으로 나만의 분위기 표현하기",
+      "친구 이야기를 끝까지 들어 주기"
+    ],
+    careful: "생각이 깊어지면 혼자 오래 머물 때가 있어요. 생각이 많은 날엔 믿는 친구에게 한 줄만 털어놓아 보세요.",
+    match: "friend",
+    matchWhy: "감성이의 조용한 세계에 친친이가 따뜻한 바깥바람을 불어넣어 줘요."
+  }
+};
+
+// ===== 질문 6개 (plan.md 2장) =====
+const QUESTIONS = [
+  {
+    q: "수강신청 D-day, 알람 울리기 5분 전",
+    a: [
+      ["다들 신청 잘 되고 있나?\n단톡방에 먼저 화이팅 보내야지", "friend"],
+      ["1지망 막히면 2지망, 그것도 막히면 3지망…\n시간표 B안·C안까지 다 짜 놨지", "planner"],
+      ["꼭 들어보고 싶었던 강의 제목이 있었는데,\n그거 꼭 잡고 싶다", "feeling"],
+      ["남들이 어렵다고 피하는 그 전공 수업?\n오히려 좋아, 넣어 보자", "passion"]
+    ]
+  },
+  {
+    q: "갑자기 생긴 2시간 공강",
+    a: [
+      ["도서관 가서 내일 과제 미리 끝내 놓으면\n저녁이 자유다", "planner"],
+      ["안 가 본 건물 꼭대기 층엔 뭐가 있을까?\n탐험 가 볼까", "passion"],
+      ["나무 그늘 벤치에서 노래 들으면서\n그냥 멍 때리고 싶어", "feeling"],
+      ["공강인 사람?\n학식 같이 먹을 사람 모집합니다~", "friend"]
+    ]
+  },
+  {
+    q: "조별과제 첫 회의, 아무도 말을 안 한다",
+    a: [
+      ["제가 한번 방향 던져 볼게요!\n일단 이걸로 가 보죠", "passion"],
+      ["어색하니까\n각자 MBTI랑 점심 메뉴부터 얘기해 볼까요?", "friend"],
+      ["발표 자료 디자인은 제가 해 볼게요.\n분위기 있게 만들고 싶어요", "feeling"],
+      ["마감까지 주차별로\n할 일부터 정리해 둘게요", "planner"]
+    ]
+  },
+  {
+    q: "강의 끝나고 나왔는데 비가 쏟아진다. 우산이 없다",
+    a: [
+      ["빗소리 좋다…\n처마 밑에서 조금만 더 구경하고 갈래", "feeling"],
+      ["가방에 늘 넣어 다니는 접이식 우산,\n오늘도 출동", "planner"],
+      ["이 정도면 뛰어도 되겠는데?\n정류장까지 전력 질주!", "passion"],
+      ["같은 방향 가는 친구한테\n우산 같이 쓰자고 연락해야지", "friend"]
+    ]
+  },
+  {
+    q: "시험 일주일 전",
+    a: [
+      ["같이 공부할 사람?\n서로 문제 내 주면 훨씬 잘 외워져", "friend"],
+      ["과목별로 하루 분량 나눠 놨어.\n오늘 몫만 하면 돼", "planner"],
+      ["좋아하는 플레이리스트 틀고\n내 노트를 예쁘게 다시 정리하는 중", "feeling"],
+      ["마지막 3일, 몰아치는 집중력이면 충분해.\n불태운다", "passion"]
+    ]
+  },
+  {
+    q: "드디어 종강 날",
+    a: [
+      ["방학 때 해 볼 새로운 거 하나 정했어.\n바로 시작이다", "passion"],
+      ["혼자 조용한 전시회나\n처음 가 보는 동네 산책 갈래", "feeling"],
+      ["고생한 사람들 다 모여!\n종강 파티 하자", "friend"],
+      ["방 정리하고, 방학 계획표부터 세워 놓고\n쉬어야 마음이 편해", "planner"]
+    ]
+  }
+];
+
+// ===== 붙어 다니는 말 =====
+// 줄이 바뀔 때 이 말들은 중간에서 갈라지지 않고 통째로 다음 줄로 넘어간다.
+const KEEP_TOGETHER = [
+  // 결과 화면
+  "서가 꼭대기 책까지", "나무 사다리가", "높은 서가 사이", "간식 바구니", "땀과 노력이", "담겨 있는 곳",
+  "무거워질 때가", "잊을 때가", "깜빡할 때가", "머물 때가", "한 걸음이",
+  "하나씩 끝내기", "한눈에 보기 좋게", "침착하게 페이스 지키기",
+  "금방 편해지기", "먼저 알아채기", "부드럽게 풀기",
+  "바로 행동으로 옮기기", "새로운 길 찾아내기", "의욕 넘치게 만들기",
+  "작은 아름다움", "나만의 분위기", "끝까지 들어 주기",
+  "못 한 일은", "내일의 나에게", "살짝 맡겨도",
+  "내 몫의 에너지를", "혼자만의 시간도",
+  "전력 질주", "물 한 모금,", "잠 한숨",
+  "믿는 친구에게", "한 줄만",
+  "지도를 그리고", "먼저 달려 나가면", "시작도 빠르고", "마무리도 깔끔해요",
+  "넓게 이어 주고", "깊게 들어 줘서", "진짜 결과물이", "바깥바람을 불어넣어",
+  // 질문·답
+  "알람 울리기", "5분 전", "2시간 공강", "첫 회의,", "말을 안 한다", "시험 일주일 전", "종강 날",
+  "화이팅 보내야지", "다 짜 놨지", "꼭 잡고 싶다", "넣어 보자",
+  "저녁이 자유다", "탐험 가 볼까", "멍 때리고", "모집합니다~",
+  "가 보죠", "점심 메뉴부터", "해 볼게요.", "할 일부터",
+  "더 구경하고", "오늘도 출동", "전력 질주!", "같이 쓰자고",
+  "잘 외워져", "하면 돼", "다시 정리하는 중",
+  "바로 시작이다", "동네 산책", "종강 파티 하자", "마음이 편해",
+  // 폰 너비에서 갈라지던 곳
+  "차곡차곡 나누고,", "사람을 잇는,", "먼저 알아채는,", "오래 머물 때가", "마음이 무거워질 때가",
+  "나에게 주는 선물이에요.", "조용한 세계에",
+  "그것도 막히면", "강의 제목이", "그 전공 수업?", "미리 끝내 놓으면",
+  "조금만 더", "몰아치는 집중력이면", "새로운 거 하나", "방학 계획표부터"
+];
+// 말 사이의 띄어쓰기를 '줄바꿈 안 되는 띄어쓰기'( )로 바꾼다
+// (긴 말부터 처리해야 "마음이 무거워질 때가"처럼 겹치는 말도 통째로 붙는다)
+const KEEP_SORTED = KEEP_TOGETHER.slice().sort((a, b) => b.length - a.length);
+function keep(text) {
+  return KEEP_SORTED.reduce(
+    (t, phrase) => t.split(phrase).join(phrase.replace(/ /g, " ")),
+    text
+  );
+}
+
+// 동점일 때 확인하는 문항 순서 (plan.md 3장): Q3 → Q1 → Q6 → Q5 → Q4 → Q2
+const TIE_ORDER = [2, 0, 5, 4, 3, 1];
+
+// ===== 진행 상태 =====
+let current = 0;     // 지금 보고 있는 질문 번호 (0부터)
+let picks = [];      // picks[i] = i번째 질문에서 고른 정령 key
+
+const $ = (id) => document.getElementById(id);
+
+function show(screenId) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+  $(screenId).classList.add("active");
+  window.scrollTo(0, 0);
+}
+
+// 배열을 무작위로 섞은 새 배열 (Fisher–Yates)
+function shuffle(list) {
+  const arr = list.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function startQuiz() {
+  current = 0;
+  picks = [];
+  show("quiz");
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const item = QUESTIONS[current];
+  $("progress-text").textContent = `질문 ${current + 1} / ${QUESTIONS.length}`;
+  $("progress-fill").style.width = `${(current / QUESTIONS.length) * 100}%`;
+  $("question").textContent = keep(`Q${current + 1}. ${item.q}`);
+
+  const box = $("answers");
+  box.innerHTML = "";
+  // 답 순서는 매번 섞는다
+  shuffle(item.a).forEach(([text, spirit]) => {
+    const btn = document.createElement("button");
+    btn.className = "answer";
+    btn.textContent = `"${keep(text)}"`;
+    btn.addEventListener("click", () => choose(spirit));
+    box.appendChild(btn);
+  });
+}
+
+function choose(spirit) {
+  picks[current] = spirit;
+  current++;
+  if (current < QUESTIONS.length) {
+    renderQuestion();
+  } else {
+    $("progress-fill").style.width = "100%";
+    showResult(decide(picks));
+  }
+}
+
+// 가장 많이 고른 정령이 결과. 동점이면 TIE_ORDER 순서로 문항을 보고
+// 동점 정령 중 하나를 고른 첫 번째 답의 정령으로 정한다.
+function decide(answers) {
+  const count = {};
+  answers.forEach((s) => { count[s] = (count[s] || 0) + 1; });
+  const max = Math.max(...Object.values(count));
+  const top = Object.keys(count).filter((s) => count[s] === max);
+  if (top.length === 1) return top[0];
+  for (const qi of TIE_ORDER) {
+    if (top.includes(answers[qi])) return answers[qi];
+  }
+}
+
+function showResult(key) {
+  const s = SPIRITS[key];
+  const mate = SPIRITS[s.match];
+
+  // 그림: images_spirit-<key>.png, 아직 없으면 이모지로 대신 표시
+  const pic = $("picture");
+  pic.innerHTML = "";
+  const caption = $("ai-caption");
+  caption.hidden = false;
+  const img = new Image();
+  img.alt = s.alt;
+  img.onerror = () => { pic.textContent = s.emoji; caption.hidden = true; };
+  img.src = `images_spirit-${key}.png`;
+  pic.appendChild(img);
+
+  $("name").textContent = `${s.emoji} ${s.name}`;
+  $("oneline").textContent = keep(s.oneline);
+  // 사는 곳: 장소 이름 한 줄 + 그 아래 "- 설명" 한 줄
+  $("home").innerHTML = `<strong>${s.home[0]}</strong><br>- ${keep(s.home[1])}`;
+  $("good").innerHTML = s.good.map((g) => `<li>${keep(g)}</li>`).join("");
+  // 조심할 것: 문장마다 줄바꿈
+  $("careful").textContent = keep(s.careful).replace(/([.!?]) /g, "$1\n");
+  $("match").innerHTML = `<strong>${mate.emoji} ${mate.name}</strong> — ${keep(s.matchWhy)}`;
+  show("result");
+}
+
+$("start-btn").addEventListener("click", startQuiz);
+$("retry-btn").addEventListener("click", () => show("start"));
+</script>
+</body>
+</html>
