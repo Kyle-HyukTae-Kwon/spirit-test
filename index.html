@@ -15,6 +15,7 @@
     --line: #e5e0d8;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0;
     min-height: 100vh;
@@ -114,10 +115,108 @@
   ul { margin: 0; padding-left: 20px; }
   #careful { white-space: pre-line; }
   .note { margin-top: 24px; font-size: .85rem; text-align: center; color: var(--muted); }
+
+  /* 오른쪽 위 로그인 막대 */
+  .topbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    min-height: 36px;
+    margin-bottom: 12px;
+    font-size: .9rem;
+  }
+  .topbar .sep { color: var(--muted); }
+  .link-btn {
+    background: none;
+    padding: 4px 2px;
+    color: var(--accent);
+    font-weight: 700;
+    border-radius: 6px;
+  }
+  .link-btn:hover { text-decoration: underline; }
+  .github-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background: #24292f;
+    color: #fff;
+    font-size: .9rem;
+    font-weight: 700;
+    border-radius: 10px;
+  }
+  .github-btn:hover { filter: brightness(1.2); }
+  .github-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+  /* 안내·에러 상자 */
+  .message {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: .9rem;
+    background: #fdecea;
+    border: 1px solid #f3c4bf;
+    color: #8a2c22;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .message p { flex: 1; }
+  .message button { background: none; color: inherit; padding: 0 4px; font-size: 1.1rem; line-height: 1; }
+  .save-status { margin-top: 16px; font-size: .9rem; text-align: center; color: var(--muted); }
+
+  /* 내 정령 도감 화면 */
+  .collect-count { font-size: 2.4rem; font-weight: 800; color: var(--accent); margin: 4px 0 16px; }
+  .collect-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .collect-item {
+    padding: 14px 8px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    text-align: center;
+  }
+  .collect-item .emoji { font-size: 2rem; display: block; }
+  .collect-item.got { background: var(--accent-soft); border-color: var(--accent); }
+  .collect-item:not(.got) { opacity: .45; }
+  .collect-item small { display: block; color: var(--muted); }
+  .history { list-style: none; padding: 0; margin: 0; }
+  .history li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .history li:last-child { border-bottom: none; }
+  .history time { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+  .privacy { margin-top: 20px; font-size: .8rem; text-align: center; color: var(--muted); }
 </style>
 </head>
 <body>
 <main>
+
+  <!-- 오른쪽 위: 로그인 상태 -->
+  <header class="topbar" id="auth-bar">
+    <button class="github-btn" id="login-btn" type="button">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      GitHub로 로그인
+    </button>
+    <span id="user-box" hidden>
+      <span id="nickname"></span>님
+      <span class="sep">·</span>
+      <button class="link-btn" id="collection-btn" type="button">내 정령 도감</button>
+      <span class="sep">·</span>
+      <button class="link-btn" id="logout-btn" type="button">로그아웃</button>
+    </span>
+  </header>
+
+  <!-- 쉬운 말 안내·에러 -->
+  <div class="message" id="message" role="alert" hidden>
+    <p id="message-text"></p>
+    <button type="button" id="message-close" aria-label="닫기">×</button>
+  </div>
 
   <!-- 첫 화면 -->
   <section id="start" class="screen active">
@@ -159,13 +258,33 @@
       <p id="careful"></p>
       <h3>잘 맞는 정령</h3>
       <p id="match"></p>
+      <p class="save-status" id="save-status"></p>
       <button class="primary" id="retry-btn">다시 하기</button>
       <p class="note">재미로 보는 테스트예요.<br>우리는 모두 여러&nbsp;정령의 모습을 조금씩 갖고 있어요 🌱</p>
     </div>
   </section>
 
+  <!-- 내 정령 도감 화면 -->
+  <section id="collection" class="screen">
+    <div class="card">
+      <div class="center">
+        <p class="result-label">내 정령 도감 · 모은 정령</p>
+        <p class="collect-count" id="collect-count">0 / 4</p>
+      </div>
+      <div class="collect-grid" id="collect-grid"></div>
+      <h3>기록</h3>
+      <p class="muted" id="history-empty" hidden>아직 기록이 없어요. 테스트를 해 보면 여기에 쌓여요.</p>
+      <ul class="history" id="history"></ul>
+      <button class="primary" id="collection-back-btn">돌아가기</button>
+    </div>
+  </section>
+
+  <p class="privacy">로그인하면 GitHub 닉네임과 테스트 결과(나온 정령·날짜)만 저장해요. 고른 답은 저장하지 않아요.</p>
+
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script>
 // ===== 정령 4종 (plan.md 1장) =====
 // key는 그림 파일 이름에 쓰임: images_spirit-<key>.png
@@ -339,7 +458,9 @@ let picks = [];      // picks[i] = i번째 질문에서 고른 정령 key
 
 const $ = (id) => document.getElementById(id);
 
+let currentScreen = "start";
 function show(screenId) {
+  currentScreen = screenId;
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   $(screenId).classList.add("active");
   window.scrollTo(0, 0);
@@ -387,7 +508,9 @@ function choose(spirit) {
     renderQuestion();
   } else {
     $("progress-fill").style.width = "100%";
-    showResult(decide(picks));
+    const key = decide(picks);
+    showResult(key);
+    saveResult(key);
   }
 }
 
@@ -432,6 +555,225 @@ function showResult(key) {
 
 $("start-btn").addEventListener("click", startQuiz);
 $("retry-btn").addEventListener("click", () => show("start"));
+
+// ===== 로그인 · 기록 저장 (Supabase) =====
+// 로그인은 선택 사항. Supabase에 연결하지 못해도 테스트는 그대로 할 수 있다.
+const cfg = window.APP_CONFIG || {};
+const db = (window.supabase && cfg.SUPABASE_URL && cfg.SUPABASE_PUBLISHABLE_KEY)
+  ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_PUBLISHABLE_KEY)
+  : null;
+
+let user = null;          // 로그인한 사람 (없으면 null)
+let lastResult = null;    // 방금 나온 결과 key
+let lastSaved = false;    // 방금 나온 결과를 저장했는지
+const PENDING_KEY = "spirit-pending-result"; // 로그인하러 가는 동안 결과를 잠깐 맡겨 두는 곳
+
+// --- 쉬운 말 안내 ---
+function showMessage(text) {
+  $("message-text").textContent = text;
+  $("message").hidden = false;
+}
+function hideMessage() { $("message").hidden = true; }
+$("message-close").addEventListener("click", hideMessage);
+
+// 어려운 에러를 쉬운 말로 바꾼다
+function friendly(error, doing) {
+  console.error(doing, error);
+  const msg = String((error && (error.message || error.error_description)) || error || "");
+  const code = error && error.code;
+  if (!navigator.onLine || /fetch|network|load failed/i.test(msg)) {
+    return `${doing} 못했어요. 인터넷 연결을 확인하고 다시 해 주세요.`;
+  }
+  if (code === "42501" || /row-level security|permission denied/i.test(msg)) {
+    return `${doing} 못했어요. 아직 저장 권한이 열려 있지 않아요. (만든 사람이 설정을 마치면 돼요)`;
+  }
+  if (/jwt|session|token|not authenticated/i.test(msg)) {
+    return `${doing} 못했어요. 로그인이 풀린 것 같아요. 다시 로그인해 주세요.`;
+  }
+  if (/provider is not enabled|unsupported provider/i.test(msg)) {
+    return "GitHub 로그인이 아직 켜져 있지 않아요. (만든 사람이 설정을 마치면 돼요)";
+  }
+  return `${doing} 못했어요. 잠시 뒤에 다시 해 주세요.`;
+}
+
+function getPending() { try { return sessionStorage.getItem(PENDING_KEY); } catch (e) { return null; } }
+function setPending(v) { try { sessionStorage.setItem(PENDING_KEY, v); } catch (e) {} }
+function clearPending() { try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {} }
+
+// --- 오른쪽 위 막대 ---
+function renderAuthBar(nickname) {
+  $("login-btn").hidden = !!user;
+  $("user-box").hidden = !user;
+  if (user) $("nickname").textContent = nickname || "정령 친구";
+}
+
+// GitHub 정보에서 닉네임 고르기
+function githubNickname(u) {
+  const m = u.user_metadata || {};
+  return m.user_name || m.preferred_username || m.full_name || m.name || "정령 친구";
+}
+
+// 처음 로그인하면 profiles에 닉네임 저장, 이미 있으면 저장된 닉네임 사용
+async function loadProfile() {
+  const fallback = githubNickname(user);
+  const { data, error } = await db
+    .from("profiles").select("nickname").eq("id", user.id).maybeSingle();
+  if (error) { showMessage(friendly(error, "회원 정보를 불러오지")); return fallback; }
+  if (data) return data.nickname || fallback;
+
+  const { error: insertError } = await db
+    .from("profiles").insert({ id: user.id, nickname: fallback });
+  if (insertError) showMessage(friendly(insertError, "닉네임을 저장하지"));
+  return fallback;
+}
+
+// --- 결과 저장 ---
+function setSaveStatus(text) { $("save-status").textContent = text; }
+
+async function saveResult(key) {
+  lastResult = key;
+  lastSaved = false;
+  if (!user) {
+    setSaveStatus(db ? "GitHub로 로그인하면 이 결과를 내 정령 도감에 모을 수 있어요." : "");
+    return;
+  }
+  setSaveStatus("내 정령 도감에 저장하는 중…");
+  // user_id는 데이터베이스가 로그인한 사람(auth.uid())으로 채운다
+  const { error } = await db.from("results").insert({ spirit: key });
+  if (error) {
+    setSaveStatus("");
+    showMessage(friendly(error, "결과를 저장하지"));
+    return;
+  }
+  lastSaved = true;
+  setSaveStatus("내 정령 도감에 저장했어요 ✓");
+}
+
+// --- 내 정령 도감 화면 ---
+let backTo = "start";
+async function openCollection() {
+  if (!user) return;
+  if (currentScreen !== "collection") backTo = currentScreen;
+  $("collect-count").textContent = "… / 4";
+  $("history").innerHTML = "";
+  $("history-empty").hidden = true;
+  renderGrid(new Set());
+  show("collection");
+
+  const { data, error } = await db
+    .from("results").select("spirit, created_at").order("created_at", { ascending: false });
+  if (error) {
+    $("collect-count").textContent = "? / 4";
+    showMessage(friendly(error, "기록을 불러오지"));
+    return;
+  }
+  const got = new Set(data.map((r) => r.spirit));
+  $("collect-count").textContent = `${got.size} / 4`;
+  renderGrid(got);
+
+  $("history-empty").hidden = data.length > 0;
+  const fmt = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" });
+  data.forEach((r) => {
+    const s = SPIRITS[r.spirit];
+    if (!s) return;
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    name.textContent = `${s.emoji} ${s.name}`;
+    const time = document.createElement("time");
+    time.dateTime = r.created_at;
+    time.textContent = fmt.format(new Date(r.created_at));
+    li.append(name, time);
+    $("history").appendChild(li);
+  });
+}
+
+function renderGrid(got) {
+  $("collect-grid").innerHTML = "";
+  Object.entries(SPIRITS).forEach(([key, s]) => {
+    const item = document.createElement("div");
+    item.className = "collect-item" + (got.has(key) ? " got" : "");
+    const emoji = document.createElement("span");
+    emoji.className = "emoji";
+    emoji.textContent = got.has(key) ? s.emoji : "❔";
+    const name = document.createElement("strong");
+    name.textContent = s.name;
+    const home = document.createElement("small");
+    home.textContent = got.has(key) ? s.home[0] : "아직 못 만났어요";
+    item.append(emoji, name, home);
+    $("collect-grid").appendChild(item);
+  });
+}
+
+// --- 로그인 · 로그아웃 ---
+$("login-btn").addEventListener("click", async () => {
+  hideMessage();
+  if (!db) {
+    showMessage("지금은 로그인할 수 없어요. 인터넷 연결을 확인하고 새로고침해 주세요. 테스트는 로그인 없이도 할 수 있어요.");
+    return;
+  }
+  // 결과 화면에서 로그인하면, 돌아온 뒤 그 결과를 저장한다
+  if (currentScreen === "result" && lastResult && !lastSaved) setPending(lastResult);
+  const { error } = await db.auth.signInWithOAuth({
+    provider: "github",
+    options: { redirectTo: location.origin + location.pathname }
+  });
+  if (error) { clearPending(); showMessage(friendly(error, "로그인하지")); }
+});
+
+$("logout-btn").addEventListener("click", async () => {
+  hideMessage();
+  const { error } = await db.auth.signOut();
+  if (error) showMessage(friendly(error, "로그아웃하지"));
+});
+
+$("collection-btn").addEventListener("click", openCollection);
+$("collection-back-btn").addEventListener("click", () => show(backTo));
+
+// 로그인 상태가 바뀔 때마다 (처음 열 때 포함)
+async function onSignedIn(sessionUser) {
+  if (user && user.id === sessionUser.id) return; // 이미 처리함
+  user = sessionUser;
+  renderAuthBar(githubNickname(user));
+  renderAuthBar(await loadProfile());
+
+  const pending = getPending();
+  if (pending && SPIRITS[pending]) {
+    clearPending();
+    showResult(pending);
+    await saveResult(pending);
+  } else if (currentScreen === "result" && lastResult && !lastSaved) {
+    await saveResult(lastResult);
+  }
+}
+
+if (db) {
+  // GitHub에서 돌아올 때 주소에 에러가 붙어 오면 쉬운 말로 알려 준다
+  const params = new URLSearchParams(location.search + "&" + location.hash.slice(1));
+  if (params.get("error")) {
+    clearPending();
+    showMessage(params.get("error") === "access_denied"
+      ? "로그인을 취소했어요. 테스트는 로그인 없이도 할 수 있어요."
+      : "로그인하지 못했어요. 잠시 뒤에 다시 해 주세요.");
+    history.replaceState(null, "", location.pathname);
+  }
+
+  db.auth.onAuthStateChange((event, session) => {
+    // 콜백 안에서 바로 Supabase를 부르면 멈출 수 있어서 한 박자 뒤에 처리
+    setTimeout(() => {
+      if (session && session.user) {
+        onSignedIn(session.user);
+      } else {
+        user = null;
+        renderAuthBar();
+        if (currentScreen === "collection") show("start");
+        if (currentScreen === "result" && !lastSaved) saveResult(lastResult);
+      }
+    }, 0);
+  });
+} else {
+  // Supabase를 불러오지 못해도 테스트는 할 수 있다
+  console.warn("Supabase를 불러오지 못했어요. 로그인 없이 테스트만 동작합니다.");
+}
 </script>
 </body>
 </html>
